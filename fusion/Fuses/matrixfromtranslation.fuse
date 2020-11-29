@@ -1,0 +1,113 @@
+-- ============================================================================
+-- modules
+-- ============================================================================
+local matrix = self and require("matrix") or nil
+local matrixutils = self and require("matrixutils") or nil
+
+-- ============================================================================
+-- constants
+-- ============================================================================
+FUSE_NAME = "MatrixFromTranslation"
+DATATYPE = "Text"
+
+-- ============================================================================
+-- fuse
+-- ============================================================================
+FuRegisterClass(FUSE_NAME, CT_Tool, {
+    REGID_DataType = DATATYPE,
+    REGID_InputDataType = DATATYPE,
+    REG_NoCommonCtrls = true,
+    REGS_Category = "Vonk\\Matrix",
+    REGS_Name = FUSE_NAME,
+    REGS_OpDescription = "Creates a translation matrix.",
+    REGS_OpIconString = FUSE_NAME
+})
+function Create()
+
+    -- there is no sense in having a picker in this context
+    -- these should be updated with each new calculation. Doesn't work as it should right now
+    self:BeginControlNest( "Translation" , "Translation" , true , { LBLC_PickButton = false } )
+
+        TranslateX = self:AddInput( "X Offset" , "Translate.X" , {
+            LINKID_DataType = "Number",
+            INPID_InputControl = "ScrewControl",
+            INP_Integer = false,
+            LINK_Main = 1
+        } )
+
+        TranslateY = self:AddInput( "Y Offset" , "Translate.Y" , {
+            LINKID_DataType = "Number",
+            INPID_InputControl = "ScrewControl",
+            INP_Integer = false,
+            LINK_Main = 2
+        } )
+
+        TranslateZ = self:AddInput( "Z Offset" , "Translate.Z" , {
+            LINKID_DataType = "Number",
+            INPID_InputControl = "ScrewControl",
+            INP_Integer = false,
+            LINK_Main = 3
+        } )
+
+    self:EndControlNest()
+
+    InShowInput = self:AddInput("Show Input", "ShowInput", {
+        LINKID_DataType = "Number",
+        INPID_InputControl = "CheckboxControl",
+        INP_Integer = true,
+        INP_Default = 1.0,
+        INP_External = false,
+        INP_DoNotifyChanged = true
+    })
+
+    OutMatrix = self:AddOutput( "Matrix" , "Matrix" , {
+        LINKID_DataType = "Text",
+        INPID_InputControl = "TextEditControl",
+        LINK_Main = 1
+    } )
+
+end
+
+-- =============================================================================
+-- utils
+-- =============================================================================
+    
+-- =============================================================================
+-- main
+-- =============================================================================
+function NotifyChanged(inp, param, time)
+    --[[
+        Handles all input control events.
+
+        :param inp: Input that triggered a signal.
+        :type inp: Input
+
+        :param param: Parameter object holding the (new) value.
+        :type param: Parameter
+
+        :param time: Current frame number.
+        :type time: float
+    ]]
+    if inp == InShowInput then
+        local visible
+        if param.Value == 1.0 then visible = true else visible = false end
+        TranslateX:SetAttrs({LINK_Visible = visible})
+        TranslateY:SetAttrs({LINK_Visible = visible})
+        TranslateZ:SetAttrs({LINK_Visible = visible})
+    end
+end
+
+function Process( req )
+
+    local mx = matrix{
+        { 1.0                              , 0.0                              , 0.0                              , 0.0 } ,
+        { 0.0                              , 1.0                              , 0.0                              , 0.0 } ,
+        { 0.0                              , 0.0                              , 1.0                              , 0.0 } ,
+        { TranslateX:GetValue( req ).Value , TranslateY:GetValue( req ).Value , TranslateZ:GetValue( req ).Value , 1.0 }
+    }
+
+    local output_matrix = matrixutils.matrix_to_string( mx )
+
+    OutMatrix:Set( req , Text( output_matrix ) )
+    
+end
