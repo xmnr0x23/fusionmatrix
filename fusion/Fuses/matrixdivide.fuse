@@ -88,8 +88,8 @@ function Process(req)
     local mx_quotient = matrix.div(mx_1, mx_2)
 
     -- matrix to interchangeable string
-    local mx_product_str = matrixutils.matrix_to_string(mx_quotient)
-    local out = Text(mx_product_str)
+    local mx_quotient_str = matrixutils.matrix_to_string(mx_quotient)
+    local out = Text(mx_quotient_str)
 
     OutMatrix:Set(req, out)
 end
