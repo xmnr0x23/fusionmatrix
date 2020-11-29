@@ -33,6 +33,7 @@ FusionMatrix is a node based matrix library for Blackmagic Design Fusion.
 - `matrixcolortransform.fuse`: Fuse that applies a color matrix on a color vector.
 - `matrixconcatenatehorizontal.fuse`: Fuse to concatenate two matrices horizontally.
 - `matrixconcatenatevertical.fuse`: Fuse to concatenate two matrices vertically.
+- `matrixdivide.fuse`: Fuse to divide two matrices.
 - `matrixfromarray.fuse`: Fuse to create a matrix from an array stored as JSON string.
 - `matrixinvert.fuse`: Fuse to invert a matrix.
 - `matrixmultiply.fuse`: Fuse to multiply two matrices.
