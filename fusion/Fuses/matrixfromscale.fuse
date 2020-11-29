@@ -7,8 +7,9 @@ local matrixutils = self and require("matrixutils") or nil
 -- ============================================================================
 -- constants
 -- ============================================================================
-FUSE_NAME = "MatrixFromTranslation"
+FUSE_NAME = "MatrixFromScale"
 DATATYPE = "Text"
+INP1_MAXSCALE = 5
 
 -- ============================================================================
 -- fuse
@@ -19,34 +20,64 @@ FuRegisterClass(FUSE_NAME, CT_Tool, {
     REG_NoCommonCtrls = true,
     REGS_Category = "Vonk\\Matrix",
     REGS_Name = FUSE_NAME,
-    REGS_OpDescription = "Creates a translation matrix.",
+    REGS_OpDescription = "Creates a scale matrix.",
     REGS_OpIconString = FUSE_NAME
 })
 
 function Create()
 
-    -- there is no sense in having a picker in this context
-    -- these should be updated with each new calculation. Doesn't work as it should right now
-    self:BeginControlNest( "Translation" , "Translation" , true , { LBLC_PickButton = false } )
+    self:BeginControlNest( "Scale" , "Scale" , true , { LBLC_PickButton = false } )
 
-        TranslateX = self:AddInput( "X Offset" , "Translate.X" , {
+        -- InLabel = self:AddInput( "Scale" , "Scale" , {
+            -- LINKID_DataType = "Number",
+            -- INPID_InputControl = "LabelControl",
+            -- INP_External = false,
+            -- INP_Passive = true,
+            -- LBLC_DropDownButton = true,
+            -- LBLC_NumInputs = 3,
+            -- LBLC_NestLevel = 1,
+            -- INP_Default = 1,
+        -- } )
+
+        -- This one should appear at the top of the nest. Currently it doesn't and I don't know why
+        -- InLockXYZ = self:AddInput( "Lock X/Y/Z" , "LockXYZ" , {
+            -- LINKID_DataType = "Number",
+            -- INPID_InputControl = "CheckboxControl",
+            -- INP_Integer = true,
+            -- INP_Default = 1.0,
+            -- ICD_Width = 1,
+        -- } )
+        
+        ScaleX = self:AddInput( "X Scale" , "Scale.X" , {
             LINKID_DataType = "Number",
-            INPID_InputControl = "ScrewControl",
+            --INP_Passive = true,
+            INPID_InputControl = "SliderControl",
             INP_Integer = false,
+            INP_Default = 1.0,
+            INP_MinScale = 0,
+            INP_MaxScale = INP1_MAXSCALE,
             LINK_Main = 1
         } )
 
-        TranslateY = self:AddInput( "Y Offset" , "Translate.Y" , {
+        ScaleY = self:AddInput( "Y Scale" , "Scale.Y" , {
             LINKID_DataType = "Number",
-            INPID_InputControl = "ScrewControl",
+            --INP_Passive = true,
+            INPID_InputControl = "SliderControl",
             INP_Integer = false,
+            INP_Default = 1.0,
+            INP_MinScale = 0,
+            INP_MaxScale = INP1_MAXSCALE,
             LINK_Main = 2
         } )
 
-        TranslateZ = self:AddInput( "Z Offset" , "Translate.Z" , {
+        ScaleZ = self:AddInput( "Z Scale" , "Scale.Z" , {
             LINKID_DataType = "Number",
-            INPID_InputControl = "ScrewControl",
+            --INP_Passive = true,
+            INPID_InputControl = "SliderControl",
             INP_Integer = false,
+            INP_Default = 1.0,
+            INP_MinScale = 0,
+            INP_MaxScale = INP1_MAXSCALE,
             LINK_Main = 3
         } )
 
@@ -60,7 +91,7 @@ function Create()
         INP_External = false,
         INP_DoNotifyChanged = true
     })
-
+    
     OutMatrix = self:AddOutput( "Matrix" , "Matrix" , {
         LINKID_DataType = "Text",
         INPID_InputControl = "TextEditControl",
@@ -92,23 +123,27 @@ function NotifyChanged(inp, param, time)
     if inp == InShowInput then
         local visible
         if param.Value == 1.0 then visible = true else visible = false end
-        TranslateX:SetAttrs({LINK_Visible = visible})
-        TranslateY:SetAttrs({LINK_Visible = visible})
-        TranslateZ:SetAttrs({LINK_Visible = visible})
+        ScaleX:SetAttrs({LINK_Visible = visible})
+        ScaleY:SetAttrs({LINK_Visible = visible})
+        ScaleZ:SetAttrs({LINK_Visible = visible})
     end
 end
 
 function Process( req )
 
-    local mx = matrix{
-        { 1.0                              , 0.0                              , 0.0                              , 0.0 } ,
-        { 0.0                              , 1.0                              , 0.0                              , 0.0 } ,
-        { 0.0                              , 0.0                              , 1.0                              , 0.0 } ,
-        { TranslateX:GetValue( req ).Value , TranslateY:GetValue( req ).Value , TranslateZ:GetValue( req ).Value , 1.0 }
+    local scale_x = ScaleX:GetValue( req ).Value
+    local scale_y = ScaleY:GetValue( req ).Value
+    local scale_z = ScaleZ:GetValue( req ).Value
+
+    local mx_scale = matrix{
+        { scale_x , 0.0     , 0.0     , 0.0 } ,
+        { 0.0     , scale_y , 0.0     , 0.0 } ,
+        { 0.0     , 0.0     , scale_z , 0.0 } ,
+        { 0.0     , 0.0     , 0.0     , 1.0 }
     }
 
-    local output_matrix = matrixutils.matrix_to_string( mx )
+    local output_matrix = matrixutils.matrix_to_string( mx_scale )
 
     OutMatrix:Set( req , Text( output_matrix ) )
-    
+
 end

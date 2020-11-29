@@ -1,0 +1,185 @@
+-- ============================================================================
+-- modules
+-- ============================================================================
+local matrix = self and require("matrix") or nil
+local matrixutils = self and require("matrixutils") or nil
+
+-- ============================================================================
+-- constants
+-- ============================================================================
+FUSE_NAME = "MatrixFromRotation"
+DATATYPE = "Text"
+INP1_MAXSCALE = 5
+
+-- ============================================================================
+-- fuse
+-- ============================================================================
+FuRegisterClass(FUSE_NAME, CT_Tool, {
+    REGID_DataType = DATATYPE,
+    REGID_InputDataType = DATATYPE,
+    REG_NoCommonCtrls = true,
+    REGS_Category = "Vonk\\Matrix",
+    REGS_Name = FUSE_NAME,
+    REGS_OpDescription = "Creates a rotation matrix.",
+    REGS_OpIconString = FUSE_NAME
+})
+
+function Create()
+
+    -- self:BeginControlNest( "Coordinate Space" , "Coordinate Space" , true , { LBLC_PickButton = false } )
+        -- InCoordinateSpace = self:AddInput( "" , "" , {
+            -- LINKID_DataType = "Number",
+            -- INPID_InputControl = "MultiButtonControl",
+            -- INP_Default = 1,
+            -- { MBTNC_AddButton = " Left-handed " , MBTNCD_ButtonWidth = 0.5 },
+            -- { MBTNC_AddButton = " Right-handed " , MBTNCD_ButtonWidth = 0.5  },
+        -- } )
+    -- self:EndControlNest()
+
+    self:BeginControlNest( "Rotation" , "Rotation" , true , { LBLC_PickButton = true } )
+
+        InRotOrder = self:AddInput( "Rotation Order" , "RotOrder" , {
+            LINKID_DataType = "Number",
+            INPID_InputControl = "MultiButtonControl",
+            INP_Default = 0,
+            { MBTNC_AddButton = " XYZ " , },
+            { MBTNC_AddButton = " XZY " , },
+            { MBTNC_AddButton = " YXZ " , },
+            { MBTNC_AddButton = " YZX " , },
+            { MBTNC_AddButton = " ZXY " , },
+            { MBTNC_AddButton = " ZYX " , },
+            --INP_DoNotifyChanged = true,
+        } )
+
+        RotateX = self:AddInput( "X Rotation" , "Rotate.X" , {
+            LINKID_DataType = "Number",
+            INPID_InputControl = "ScrewControl",
+            INP_Integer = false,
+            LINK_Main = 1
+        } )
+
+        RotateY = self:AddInput( "Y Rotation" , "Rotate.Y" , {
+            LINKID_DataType = "Number",
+            INPID_InputControl = "ScrewControl",
+            INP_Integer = false,
+            LINK_Main = 2
+        } )
+
+        RotateZ = self:AddInput( "Z Rotation" , "Rotate.Z" , {
+            LINKID_DataType = "Number",
+            INPID_InputControl = "ScrewControl",
+            INP_Integer = false,
+            LINK_Main = 3
+        } )
+
+    self:EndControlNest()
+
+    InShowInput = self:AddInput("Show Input", "ShowInput", {
+        LINKID_DataType = "Number",
+        INPID_InputControl = "CheckboxControl",
+        INP_Integer = true,
+        INP_Default = 1.0,
+        INP_External = false,
+        INP_DoNotifyChanged = true
+    })
+    
+    OutMatrix = self:AddOutput( "Matrix" , "Matrix" , {
+        LINKID_DataType = "Text",
+        INPID_InputControl = "TextEditControl",
+        LINK_Main = 1
+    } )
+
+end
+
+-- =============================================================================
+-- utils
+-- =============================================================================
+    
+-- =============================================================================
+-- main
+-- =============================================================================
+function NotifyChanged(inp, param, time)
+    --[[
+        Handles all input control events.
+
+        :param inp: Input that triggered a signal.
+        :type inp: Input
+
+        :param param: Parameter object holding the (new) value.
+        :type param: Parameter
+
+        :param time: Current frame number.
+        :type time: float
+    ]]
+    if inp == InShowInput then
+        local visible
+        if param.Value == 1.0 then visible = true else visible = false end
+        RotateX:SetAttrs({LINK_Visible = visible})
+        RotateY:SetAttrs({LINK_Visible = visible})
+        RotateZ:SetAttrs({LINK_Visible = visible})
+    end
+end
+
+function Process( req )
+
+    local rotation_order = InRotOrder:GetValue( req ).Value
+
+    local rotation_x = math.rad( RotateX:GetValue( req ).Value )
+    local rotation_y = math.rad( RotateY:GetValue( req ).Value )
+    local rotation_z = math.rad( RotateZ:GetValue( req ).Value )
+
+    local mx_product = matrix{
+        { 1.0 , 0.0 , 0.0 , 0.0 } ,
+        { 0.0 , 1.0 , 0.0 , 0.0 } ,
+        { 0.0 , 0.0 , 1.0 , 0.0 } ,
+        { 0.0 , 0.0 , 0.0 , 1.0 }
+    }
+
+-- 3D Math Primer for Graphics and Game Development, Chapter 5. Matrices and Linear Transformations, p140
+
+    local mx_rotation_x = matrix{
+        { 1.0 , 0.0                     , 0.0                    , 0.0 } ,
+        { 0.0 , math.cos( rotation_x )  , math.sin( rotation_x ) , 0.0 } ,
+        { 0.0 , -math.sin( rotation_x ) , math.cos( rotation_x ) , 0.0 } ,
+        { 0.0 , 0.0                     , 0.0                    , 1.0 }
+    }
+
+    local mx_rotation_y = matrix{
+        { math.cos( rotation_y ) , 0.0 , -math.sin( rotation_y ) , 0.0 } ,
+        { 0.0                    , 1.0 , 0.0                     , 0.0 } ,
+        { math.sin( rotation_y ) , 0.0 , math.cos( rotation_y )  , 0.0 } ,
+        { 0.0                    , 0.0 , 0.0                     , 1.0 }
+    }
+
+    local mx_rotation_z = matrix{
+        { math.cos( rotation_z )  , math.sin( rotation_z ) , 0.0 , 0.0 } ,
+        { -math.sin( rotation_z ) , math.cos( rotation_z ) , 0.0 , 0.0 } ,
+        { 0.0                     , 0.0                    , 1.0 , 0.0 } ,
+        { 0.0                     , 0.0                    , 0.0 , 1.0 }
+    }
+
+    -- XYZ
+    if rotation_order == 0 then
+        mx_product = matrix.mul( matrix.mul( mx_rotation_x , mx_rotation_y ) , mx_rotation_z )
+    -- XZY
+    elseif rotation_order == 1 then
+        mx_product = matrix.mul( matrix.mul( mx_rotation_x , mx_rotation_z ) , mx_rotation_y )
+    -- YXZ
+    elseif rotation_order == 2 then
+        mx_product = matrix.mul( matrix.mul( mx_rotation_y , mx_rotation_x ) , mx_rotation_z )
+    -- YZX
+    elseif rotation_order == 3 then
+        mx_product = matrix.mul( matrix.mul( mx_rotation_y , mx_rotation_z ) , mx_rotation_x )
+    -- ZXY
+    elseif rotation_order == 4 then
+        mx_product = matrix.mul( matrix.mul( mx_rotation_z , mx_rotation_x ) , mx_rotation_y )
+    -- ZYX
+    elseif rotation_order == 5 then
+        mx_product = matrix.mul( matrix.mul( mx_rotation_z , mx_rotation_y ) , mx_rotation_x )
+    end
+
+    local output_matrix = matrixutils.matrix_to_string( mx_product )
+
+    OutMatrix:Set( req , Text( output_matrix ) )
+
+end
