@@ -1,0 +1,133 @@
+-- ============================================================================
+-- modules
+-- ============================================================================
+local matrix = self and require("matrix") or nil
+local matrixutils = self and require("matrixutils") or nil
+
+-- ============================================================================
+-- constants
+-- ============================================================================
+FUSE_NAME = "MatrixToTranslation"
+DATATYPE = "Text"
+
+-- ============================================================================
+-- fuse
+-- ============================================================================
+FuRegisterClass(FUSE_NAME, CT_Tool, {
+    REGID_DataType = DATATYPE,
+    REGID_InputDataType = DATATYPE,
+    REG_NoCommonCtrls = true,
+    REGS_Category = "Vonk\\Matrix",
+    REGS_Name = FUSE_NAME,
+    REGS_OpDescription = "Decomposes translation from a matrix.",
+    REGS_OpIconString = FUSE_NAME
+})
+
+function Create()
+
+    -- there is no sense in having a picker in this context
+    self:BeginControlNest( "Matrices (Txt)" , "MatricesTxt" , true , { LBLC_PickButton = false } )
+    
+            InMatrix1 = self:AddInput( "Input" , "Input" , {
+            LINKID_DataType = "Text",
+            INPID_InputControl = "TextEditControl",
+            --TEC_Lines = 1,
+            TEC_Wrap = true,
+            --TEC_ReadOnly = false,
+            LINK_Main = 1
+        })
+
+    self:EndControlNest()
+
+    -- there is no sense in having a picker in this context
+    -- these should be updated with each new calculation. Doesn't work as it should right now
+    self:BeginControlNest( "Translation" , "Translation" , true , { LBLC_PickButton = false } )
+
+        TranslateX = self:AddInput( "X Offset" , "Translate.X" , {
+            LINKID_DataType = "Number",
+            INP_Passive = true,
+            INPID_InputControl = "ScrewControl",
+            INP_Integer = false,
+        } )
+
+        TranslateY = self:AddInput( "Y Offset" , "Translate.Y" , {
+            LINKID_DataType = "Number",
+            INP_Passive = true,
+            INPID_InputControl = "ScrewControl",
+            INP_Integer = false,
+        } )
+
+        TranslateZ = self:AddInput( "Z Offset" , "Translate.Z" , {
+            LINKID_DataType = "Number",
+            INP_Passive = true,
+            INPID_InputControl = "ScrewControl",
+            INP_Integer = false,
+        } )
+
+    self:EndControlNest()
+
+    OutTranslationX = self:AddOutput( "X Offset" , "Translate.X" , {
+        LINKID_DataType = "Number",
+        LINK_Main = 1,
+    } )
+
+    OutTranslationY = self:AddOutput( "Y Offset" , "Translate.Y" , {
+        LINKID_DataType = "Number",
+        LINK_Main = 2,
+    } )
+
+    OutTranslationZ = self:AddOutput( "Z Offset" , "Translate.Z" , {
+        LINKID_DataType = "Number",
+        LINK_Main = 3,
+    } )
+
+end
+
+-- =============================================================================
+-- utils
+-- =============================================================================
+    
+-- =============================================================================
+-- main
+-- =============================================================================
+
+-- function NotifyChanged(inp, param, time)
+    -- --[[
+        -- Handles all input control events.
+
+        -- :param inp: Input that triggered a signal.
+        -- :type inp: Input
+
+        -- :param param: Parameter object holding the (new) value.
+        -- :type param: Parameter
+
+        -- :param time: Current frame number.
+        -- :type time: float
+    -- ]]
+    -- if inp == InShowInput then
+        -- local visible
+        -- if param.Value == 1.0 then visible = true else visible = false end
+    -- end
+-- end
+
+function Process( req )
+
+    local mx_str = InMatrix1:GetValue( req ).Value
+
+    -- matrix from interchangeable string
+    local mx = matrixutils.matrix_from_string( mx_str )
+
+    -- the idea is to reflect the output to the Input Controls in the UI
+    -- Translate X
+    TranslateX:SetSource( Number( mx[4][1] ) , 0 )
+    OutTranslationX:Set( req , mx[4][1] )
+    
+    -- Translate Y
+    TranslateY:SetSource( Number( mx[4][2] ) , 0 )
+    OutTranslationY:Set( req , mx[4][2] )
+    
+    -- Translate Z
+    TranslateZ:SetSource( Number( mx[4][3] ) , 0 )
+    OutTranslationZ:Set( req , mx[4][3] )
+    
+end
