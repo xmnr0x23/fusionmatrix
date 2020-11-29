@@ -36,12 +36,18 @@ FusionMatrix is a node based matrix library for Blackmagic Design Fusion.
 - `matrixdivide.fuse`: Fuse to divide two matrices.
 - `matrixdividenumber.fuse`: Fuse to divide a matrix by a number.
 - `matrixfromarray.fuse`: Fuse to create a matrix from an array stored as JSON string.
+- `matrixfromrotation.fuse`: Fuse to create a matrix from euler angles.
+- `matrixfromscale.fuse`: Fuse to create a matrix from scale.
+- `matrixfromtranslation.fuse`: Fuse to create a matrix from translation.
 - `matrixinvert.fuse`: Fuse to invert a matrix.
 - `matrixmultiply.fuse`: Fuse to multiply two matrices.
 - `matrixslice.fuse`: Fuse to slice a matrix.
+- `matrixtorotation.fuse`: Fuse to decompose a rotation matrix.
+- `matrixtoscale.fuse`: Fuse to decompose a scale matrix.
+- `matrixtotranslation.fuse`: Fuse to decompose a translation matrix.
 - `matrixtranspose.fuse`: Fuse to transpose a matrix.
 - `readmatrix.fuse`: Fuse to read a matrix from metadata of an image.
-- `writematrix.fuse`: Fuse to write a matrix to metadata of an image.
+- `writematrix.fuse`: Fuse to write a matrix to metadata of an image
 
 **Modules/Lua**
 
