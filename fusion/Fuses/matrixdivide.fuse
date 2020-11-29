@@ -84,11 +84,11 @@ function Process(req)
     local mx_1 = matrixutils.matrix_from_string(mx_1_str)
     local mx_2 = matrixutils.matrix_from_string(mx_2_str)
 
-    -- multiply
-    local mx_product = matrix.div(mx_1, mx_2)
+    -- divide
+    local mx_quotient = matrix.div(mx_1, mx_2)
 
     -- matrix to interchangeable string
-    local mx_product_str = matrixutils.matrix_to_string(mx_product)
+    local mx_product_str = matrixutils.matrix_to_string(mx_quotient)
     local out = Text(mx_product_str)
 
     OutMatrix:Set(req, out)
