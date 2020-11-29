@@ -1,0 +1,167 @@
+-- ============================================================================
+-- modules
+-- ============================================================================
+local matrix = self and require("matrix") or nil
+local matrixutils = self and require("matrixutils") or nil
+
+-- ============================================================================
+-- constants
+-- ============================================================================
+FUSE_NAME = "MatrixColorTransform"
+DATATYPE = "Text"
+
+-- ============================================================================
+-- fuse
+-- ============================================================================
+
+FuRegisterClass(
+    FUSE_NAME,
+    CT_Tool,
+    {
+        REGS_Category = "Vonk\\Matrix",
+        REGS_OpDescription = "Animatible/Modifiable ColorMatrix",
+        REGS_OpIconString = FUSE_NAME,
+        REG_AcceptsDoD = true,
+        REG_NoMotionBlurCtrls = true,
+        REG_SupportsDoD = true,
+        --REGP_TileColor = RGB( 0 , 0.666666666666667 , 0 ) , RGB( 0 , 0 , 0 )
+    }
+)
+
+function Create()
+
+    InCanvas = self:AddInput(
+        "Affect Canvas",
+        "AffectCanvas",
+        {
+            LINKID_DataType = "Number",
+            INPID_InputControl = "CheckboxControl",
+            INP_Integer = true,
+            INP_Default = 1.0,
+            ICD_Width = .4,
+        }
+    )
+
+    self:BeginControlNest(
+        "Matrices (Txt)",
+        "MatricesTxt",
+        true,
+        { LBLC_PickButton = false }
+    )
+
+        InMatrix = self:AddInput(
+            "Matrix",
+            "Matrix",
+            {
+                LINKID_DataType = "Text",
+                INPID_InputControl = "TextEditControl",
+                LINK_Main = 2,
+                TEC_Wrap = true,
+            }
+        )
+
+    self:EndControlNest()
+
+    InShowInput = self:AddInput("Show Input", "ShowInput", {
+        LINKID_DataType = "Number",
+        INPID_InputControl = "CheckboxControl",
+        INP_Integer = true,
+        INP_Default = 1.0,
+        INP_External = false,
+        INP_DoNotifyChanged = true
+    })
+    
+    InImage = self:AddInput(
+        "Input",
+        "Input",
+        {
+            LINKID_DataType = "Image",
+            LINK_Main = 1,
+            INP_Required = true,
+        }
+    )
+
+    OutImage = self:AddOutput(
+        "Output",
+        "Output",
+        {
+            LINKID_DataType = "Image",
+            LINK_Main = 1,
+        }
+    )
+
+end
+
+
+function PreCalcProcess( req )
+
+    Process( req )
+
+end
+
+function ConvertCMOrder( mx_in )
+
+    local mx_out = ColorMatrixFull()
+
+    mx_out.n11 = mx_in.n33;  mx_out.n21 = mx_in.n23;  mx_out.n31 = mx_in.n13;  mx_out.n41 = mx_in.n43;  mx_out.n51 = mx_in.n53;
+    mx_out.n12 = mx_in.n32;  mx_out.n22 = mx_in.n22;  mx_out.n32 = mx_in.n12;  mx_out.n42 = mx_in.n42;  mx_out.n52 = mx_in.n52;
+    mx_out.n13 = mx_in.n31;  mx_out.n23 = mx_in.n21;  mx_out.n33 = mx_in.n11;  mx_out.n43 = mx_in.n41;  mx_out.n53 = mx_in.n51;
+    mx_out.n14 = mx_in.n34;  mx_out.n24 = mx_in.n24;  mx_out.n34 = mx_in.n14;  mx_out.n44 = mx_in.n44;  mx_out.n54 = mx_in.n54;
+    mx_out.n15 = mx_in.n35;  mx_out.n25 = mx_in.n25;  mx_out.n35 = mx_in.n15;  mx_out.n45 = mx_in.n45;  mx_out.n55 = mx_in.n55;
+
+    return mx_out
+
+end
+
+function Process( req )
+
+    local img = InImage:GetValue( req )
+    local do_canvas = ( InCanvas:GetValue(req).Value > 0.5 )
+    local mx_str = InMatrix:GetValue( req ).Value
+    -- matrix from interchangeable string
+    local mx = matrixutils.matrix_from_string( mx_str )
+
+    local canvaspixel = Pixel()
+    local mx_fusion = ColorMatrixFull()
+
+    -- transpose
+    mx = matrix.transpose( mx )
+
+    mx_fusion.n11 = mx[1][1];  mx_fusion.n21 = mx[1][2];  mx_fusion.n31 = mx[1][3];  mx_fusion.n41 = mx[1][4];
+    mx_fusion.n12 = mx[2][1];  mx_fusion.n22 = mx[2][2];  mx_fusion.n32 = mx[2][3];  mx_fusion.n42 = mx[2][4];
+    mx_fusion.n13 = mx[3][1];  mx_fusion.n23 = mx[3][2];  mx_fusion.n33 = mx[3][3];  mx_fusion.n43 = mx[3][4];
+    mx_fusion.n14 = mx[4][1];  mx_fusion.n24 = mx[4][2];  mx_fusion.n34 = mx[4][3];  mx_fusion.n44 = mx[4][4];
+
+    mx_fusion = ConvertCMOrder( mx_fusion )
+
+    out = img:ApplyMatrixOf( mx_fusion )
+
+    if do_canvas then
+        OutImage:Set( req , out )
+    else
+        img:GetCanvasColor( canvaspixel )
+        out:SetCanvasColor( canvaspixel )
+        OutImage:Set( req , out )
+    end
+
+end
+
+function NotifyChanged( inp , param , time )
+    --[[
+        Handles all input control events.
+
+        :param inp: Input that triggered a signal.
+        :type inp: Input
+
+        :param param: Parameter object holding the (new) value.
+        :type param: Parameter
+
+        :param time: Current frame number.
+        :type time: float
+    ]]
+    if inp == InShowInput then
+        local visible
+        if param.Value == 1.0 then visible = true else visible = false end
+        InMatrix:SetAttrs( {LINK_Visible = visible} )
+    end
+end
