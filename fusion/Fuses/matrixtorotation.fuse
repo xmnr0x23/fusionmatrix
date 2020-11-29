@@ -1,0 +1,145 @@
+-- ============================================================================
+-- modules
+-- ============================================================================
+local matrix = self and require("matrix") or nil
+local matrixutils = self and require("matrixutils") or nil
+
+-- ============================================================================
+-- constants
+-- ============================================================================
+FUSE_NAME = "MatrixToRotation"
+DATATYPE = "Text"
+INP1_MAXSCALE = 5
+
+-- ============================================================================
+-- fuse
+-- ============================================================================
+FuRegisterClass(FUSE_NAME, CT_Tool, {
+    REGID_DataType = DATATYPE,
+    REGID_InputDataType = DATATYPE,
+    REG_NoCommonCtrls = true,
+    REGS_Category = "Vonk\\Matrix",
+    REGS_Name = FUSE_NAME,
+    REGS_OpDescription = "Decomposes a rotation from a matrix in euler angles.",
+    REGS_OpIconString = FUSE_NAME
+})
+
+function Create()
+
+    -- there is no sense in having a picker in this context
+    self:BeginControlNest( "Matrices (Txt)" , "MatricesTxt" , true , { LBLC_PickButton = false } )
+    
+            InMatrix1 = self:AddInput( "Input" , "Input" , {
+            LINKID_DataType = "Text",
+            INPID_InputControl = "TextEditControl",
+            --TEC_Lines = 1,
+            TEC_Wrap = true,
+            --TEC_ReadOnly = false,
+            LINK_Main = 1
+        })
+
+    self:EndControlNest()
+
+    -- there is no sense in having a picker in this context
+    -- these should be updated with each new calculation. Doesn't work as it should right now.
+    self:BeginControlNest( "Translation" , "Translation" , true , { LBLC_PickButton = false } )
+
+        -- -- This doesn't do anything yet. Not applicable at this stage though.
+        -- RotOrder = self:AddInput( "Rotation Order" , "RotOrder" , {
+            -- LINKID_DataType = "Number",
+            -- INPID_InputControl = "MultiButtonControl",
+            -- INP_Default = 0,
+            -- { MBTNC_AddButton = " XYZ " , },
+            -- { MBTNC_AddButton = " XZY " , },
+            -- { MBTNC_AddButton = " YXZ " , },
+            -- { MBTNC_AddButton = " YZX " , },
+            -- { MBTNC_AddButton = " ZXY " , },
+            -- { MBTNC_AddButton = " ZYX " , },
+            -- --INP_DoNotifyChanged = true,
+        -- } )
+        
+        RotateX = self:AddInput( "X Rotation" , "Rotate.X" , {
+            LINKID_DataType = "Number",
+            INP_Passive = true,
+            INPID_InputControl = "ScrewControl",
+            INP_Integer = false,
+        } )
+
+        RotateY = self:AddInput( "Y Rotation" , "Rotate.Y" , {
+            LINKID_DataType = "Number",
+            INP_Passive = true,
+            INPID_InputControl = "ScrewControl",
+            INP_Integer = false,
+        } )
+
+        RotateZ = self:AddInput( "Z Rotation" , "Rotate.Z" , {
+            LINKID_DataType = "Number",
+            INP_Passive = true,
+            INPID_InputControl = "ScrewControl",
+            INP_Integer = false,
+        } )
+
+    self:EndControlNest()
+    
+    OutRotationX = self:AddOutput( "X Rotation" , "Rotate.X" , {
+        LINKID_DataType = "Number",
+        LINK_Main = 1,
+    } )
+
+    OutRotationY = self:AddOutput( "Y Rotation" , "Rotate.Y" , {
+        LINKID_DataType = "Number",
+        LINK_Main = 2,
+    } )
+
+    OutRotationZ = self:AddOutput( "Z Rotation" , "Rotate.Z" , {
+        LINKID_DataType = "Number",
+        LINK_Main = 3,
+    } )
+
+end
+
+-- =============================================================================
+-- utils
+-- =============================================================================
+    
+-- =============================================================================
+-- main
+-- =============================================================================
+-- function NotifyChanged( inp , param , time )
+-- end
+
+function Process( req )
+
+    local mx_str = InMatrix1:GetValue( req ).Value
+
+    -- matrix from interchangeable string
+    local mx = matrixutils.matrix_from_string( mx_str )
+    local euler_x = 0
+    local euler_y = 0
+    local euler_z = 0
+
+    -- calc rotation x
+    if math.cos( -math.asin( mx[1][3] ) ) ~=0 then
+        euler_x = math.deg( math.atan2( mx[2][3] , mx[3][3] ) )
+    else
+        euler_x = math.deg( math.atan2( mx[2][1] , mx[2][2] ) )
+    end
+
+    -- calc rotation y
+    euler_y = math.deg( -math.asin( mx[1][3] ) )
+
+    -- calc rotation z
+    if math.cos( -math.asin( mx[1][3] ) ) ~=0 then
+    euler_z = math.deg( math.atan2( mx[1][2] , mx[1][1] ) )
+    end
+    
+    RotateX:SetSource( Number( euler_x ) , 0 )
+    OutRotationX:Set( req , euler_x )
+    
+    RotateY:SetSource( Number( euler_y ) , 0 )
+    OutRotationY:Set( req , euler_y )
+    
+    RotateZ:SetSource( Number( euler_z ) , 0 )
+    OutRotationZ:Set( req , euler_z )
+    
+end

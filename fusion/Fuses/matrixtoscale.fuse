@@ -1,0 +1,130 @@
+-- ============================================================================
+-- modules
+-- ============================================================================
+local matrix = self and require("matrix") or nil
+local matrixutils = self and require("matrixutils") or nil
+
+-- ============================================================================
+-- constants
+-- ============================================================================
+FUSE_NAME = "MatrixToScale"
+DATATYPE = "Text"
+INP1_MAXSCALE = 5
+
+-- ============================================================================
+-- fuse
+-- ============================================================================
+FuRegisterClass(FUSE_NAME, CT_Tool, {
+    REGID_DataType = DATATYPE,
+    REGID_InputDataType = DATATYPE,
+    REG_NoCommonCtrls = true,
+    REGS_Category = "Vonk\\Matrix",
+    REGS_Name = FUSE_NAME,
+    REGS_OpDescription = "Decomposes scale from a matrix.",
+    REGS_OpIconString = FUSE_NAME
+})
+
+function Create()
+
+    -- there is no sense in having a picker in this context
+    self:BeginControlNest( "Matrices (Txt)" , "MatricesTxt" , true , { LBLC_PickButton = false } )
+    
+            InMatrix1 = self:AddInput( "Input" , "Input" , {
+            LINKID_DataType = "Text",
+            INPID_InputControl = "TextEditControl",
+            --TEC_Lines = 1,
+            TEC_Wrap = true,
+            --TEC_ReadOnly = false,
+            LINK_Main = 1
+        })
+
+    self:EndControlNest()
+
+    -- there is no sense in having a picker in this context
+    -- these should be updated with each new calculation. Doesn't work as it should right now
+    self:BeginControlNest( "Scale" , "Scale" , true , { LBLC_PickButton = false } )
+
+        ScaleX = self:AddInput( "X Scale" , "Scale.X" , {
+            LINKID_DataType = "Number",
+            INP_Passive = true,
+            INPID_InputControl = "ScrewControl",
+            INP_Integer = false,
+            --ICD_Width = 0.5,
+        } )
+
+        ScaleY = self:AddInput( "Y Scale" , "Scale.Y" , {
+            LINKID_DataType = "Number",
+            INP_Passive = true,
+            INPID_InputControl = "ScrewControl",
+            INP_Integer = false,
+        } )
+
+        ScaleZ = self:AddInput( "Z Scale" , "Scale.Z" , {
+            LINKID_DataType = "Number",
+            INP_Passive = true,
+            INPID_InputControl = "ScrewControl",
+            INP_Integer = false,
+        } )
+
+    self:EndControlNest()
+    
+    OutScaleX = self:AddOutput( "X Scale" , "Scale.X" , {
+        LINKID_DataType = "Number",
+        LINK_Main = 1,
+    } )
+
+    OutScaleY = self:AddOutput( "Y Scale" , "Scale.Y" , {
+        LINKID_DataType = "Number",
+        LINK_Main = 2,
+    } )
+
+    OutScaleZ = self:AddOutput( "Z Scale" , "Scale.Z" , {
+        LINKID_DataType = "Number",
+        LINK_Main = 3,
+    } )
+
+end
+
+-- =============================================================================
+-- utils
+-- =============================================================================
+
+--calculate the length of the vector
+function length( vector )
+
+    return math.sqrt( vector["x"]^2 + vector["y"]^2 + vector["z"]^2 )
+
+end
+-- =============================================================================
+-- main
+-- =============================================================================
+-- function NotifyChanged( inp , param , time )
+-- end
+
+function Process( req )
+
+    local mx_str = InMatrix1:GetValue( req ).Value
+
+    -- matrix from interchangeable string
+    local mx = matrixutils.matrix_from_string( mx_str )
+    
+    -- calculate the length of each vector
+    -- should re-write this and use the "length" function above
+    local length_x = math.sqrt( mx[1][1]^2 + mx[1][2]^2 + mx[1][3]^2 )
+    local length_y = math.sqrt( mx[2][1]^2 + mx[2][2]^2 + mx[2][3]^2 )
+    local length_z = math.sqrt( mx[3][1]^2 + mx[3][2]^2 + mx[3][3]^2 )
+
+    -- the idea is to reflect the output to the Input Controls in the UI
+    -- Scale X
+    ScaleX:SetSource( Number( length_x ) , 0 )
+    OutScaleX:Set( req , length_x )
+    
+    -- Scale Y
+    ScaleY:SetSource( Number( length_y ) , 0 )
+    OutScaleY:Set( req , length_y )
+    
+    -- Scale Z
+    ScaleZ:SetSource( Number( length_z ) , 0 )
+    OutScaleZ:Set( req , length_z )
+    
+end
