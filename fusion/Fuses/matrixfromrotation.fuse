@@ -55,13 +55,17 @@ function Create()
             LINKID_DataType = "Number",
             INPID_InputControl = "ScrewControl",
             INP_Integer = false,
-            LINK_Main = 1
+            LINK_Main = 1,
+            INP_MaxScale = 360.0,
+            IC_Steps = 1,
         } )
 
         RotateY = self:AddInput( "Y Rotation" , "Rotate.Y" , {
             LINKID_DataType = "Number",
             INPID_InputControl = "ScrewControl",
             INP_Integer = false,
+            INP_MaxScale = 360.0,
+            IC_Steps = 1,
             LINK_Main = 2
         } )
 
@@ -69,6 +73,8 @@ function Create()
             LINKID_DataType = "Number",
             INPID_InputControl = "ScrewControl",
             INP_Integer = false,
+            INP_MaxScale = 360.0,
+            IC_Steps = 1,
             LINK_Main = 3
         } )
 
